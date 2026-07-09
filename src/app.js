@@ -1,34 +1,37 @@
 import 'dotenv/config';
 import express from 'express';
-import mongoose from 'mongoose';
 import morgan from 'morgan';
 import cors from 'cors';
-
 
 import authRoutes from './routes/auth.routes.js';
 import taskRoutes from './routes/task.routes.js';
 
-import e from 'cors';
-
 const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(morgan('dev'));
 
-app.get('/', (req, res) => res.json({ok: true, name: 'Todo API'}));
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
+  : true;
+
+app.use(cors({ origin: allowedOrigins, credentials: true }));
+app.use(express.json());
+
+if (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+}
+
+app.get('/', (req, res) => res.json({ ok: true, name: 'Todo API' }));
+app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/tasks', taskRoutes);
 
+app.use((req, res) => {
+  res.status(404).json({ ok: false, message: 'Ruta no encontrada' });
+});
 
+app.use((err, req, res, next) => {
+  console.error(err);
+  res.status(500).json({ ok: false, message: 'Error en el servidor' });
+});
 
-const {PORT = 4000, MONGO_URI} = process.env;
-mongoose.connect(process.env.MONGO_URI, {dbName: 'Cluster0'})
-    .then(() => {
-        console.log('Conectado a mongoDB', mongoose.connection.name);
-        app.listen(PORT, () => console.log(`Servidor ejecutandose por: ${PORT}`));
-    })
-    .catch(err =>{
-        console.error('Error conectado a mongoDB', err);
-        process.exit(1);
-    });
+export default app;

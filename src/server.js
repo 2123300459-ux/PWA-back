@@ -1,34 +1,15 @@
 import 'dotenv/config';
-import express from 'express';
-import mongoose from 'mongoose';
-import morgan from 'morgan';
-import cors from 'cors';
+import app from './app.js';
+import { connectToDB } from './db/connect.js';
 
+const { PORT = 4000 } = process.env;
 
-import authRoutes from './routes/auth.routes.js';
-import taskRoutes from './routes/task.routes.js';
-
-import e from 'cors';
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-app.use(morgan('dev'));
-
-app.get('/', (req, res) => res.json({ok: true, name: 'Todo API'}));
-
-app.use('/api/auth', authRoutes);
-app.use('/api/tasks', taskRoutes);
-
-
-
-const {PORT = 4000, MONGO_URI} = process.env;
-mongoose.connect(process.env.MONGO_URI, {dbName: 'Cluster0'})
-    .then(() => {
-        console.log('Conectado a mongoDB', mongoose.connection.name);
-        app.listen(PORT, () => console.log(`Servidor ejecutandose por: ${PORT}`));
-    })
-    .catch(err =>{
-        console.error('Error conectado a mongoDB', err);
-        process.exit(1);
-    });
+connectToDB()
+  .then((connection) => {
+    console.log('Conectado a MongoDB:', connection.name);
+    app.listen(PORT, () => console.log(`Servidor ejecutandose en el puerto ${PORT}`));
+  })
+  .catch((err) => {
+    console.error('Error conectando a MongoDB:', err);
+    process.exit(1);
+  });
